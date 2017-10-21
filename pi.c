@@ -4,12 +4,12 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include<sys/time.h>
-#define num_theads 16
 
 //Global Variables...//
+int num_theads;
 long long int num_toss_for_one_thread;
 long long int total_in_circle = 0;
-pthread_mutex_t mutex;
+sem_t sem;
 
 double serial_calculate_pi(long long int num_toss){
     long long int num_in_circle = 0;
@@ -36,15 +36,16 @@ void* calculate_pi(void *arg){
     long long int toss;
     unsigned int seed = rand();
     for(toss=0; toss<num_toss_for_one_thread; toss++){
-        double x = rand_r(&seed) / (double)RAND_MAX;
-        double y = rand_r(&seed) / (double)RAND_MAX;
-        num_in_circle = (x*x + y*y <= 1)? num_in_circle+1 : num_in_circle;
+        //-1~1//
+        double x = 2.0 * (double)rand_r(&seed) / (RAND_MAX + 1.0) + (-1.0);
+        double y = 2.0 * (double)rand_r(&seed) / (RAND_MAX + 1.0) - (-1.0);
+        num_in_circle = (x*x + y*y <= 1.0)? num_in_circle+1 : num_in_circle;
     }
-    
-    pthread_mutex_lock(&mutex);
-    total_in_circle += num_in_circle;
-    pthread_mutex_unlock(&mutex);
 
+    //Critiacal Section...//
+    sem_wait(&sem);
+    total_in_circle += num_in_circle;
+    sem_post(&sem);
     pthread_exit(NULL);
 }
 
@@ -56,6 +57,7 @@ int main (int argc, char *argv[]){
     }
 
     int num_core = atoi(argv[1]);
+    num_theads = num_core*4;
     long long int num_toss = atoll(argv[2]);
     printf("-> Number of Cores: %d\n", num_core);
     printf("-> Number of Toss: %lli\n", num_toss);
@@ -69,7 +71,7 @@ int main (int argc, char *argv[]){
     //pi = serial_calculate_pi(num_toss);
 
     pthread_t tid[num_theads];
-    pthread_mutex_init(&mutex, NULL);
+    sem_init(&sem, 0, 1);
 
     int t;
     for(t=0; t<num_theads; t++){
@@ -83,7 +85,7 @@ int main (int argc, char *argv[]){
     for(t=0; t<num_theads; t++){
         pthread_join(tid[t], NULL);
     }
-    pthread_mutex_destroy(&mutex);
+    sem_destroy(&sem);
 
     //Time End...//
     gettimeofday(&end, 0);
