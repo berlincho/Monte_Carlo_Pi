@@ -37,8 +37,8 @@ void* calculate_pi(void *arg){
     unsigned int seed = rand();
     for(toss=0; toss<num_toss_for_one_thread; toss++){
         //-1~1//
-        double x = 2.0 * (double)rand_r(&seed) / (RAND_MAX + 1.0) + (-1.0);
-        double y = 2.0 * (double)rand_r(&seed) / (RAND_MAX + 1.0) - (-1.0);
+        double x = rand_r(&seed) / ((double)RAND_MAX + 1) * 2.0 - 1.0;
+        double y = rand_r(&seed) / ((double)RAND_MAX + 1) * 2.0 - 1.0;
         num_in_circle = (x*x + y*y <= 1.0)? num_in_circle+1 : num_in_circle;
     }
 
@@ -93,6 +93,7 @@ int main (int argc, char *argv[]){
     int usec = end.tv_usec - start.tv_usec;
 
     //Output Result...//
+    printf("%d, %d", total_in_circle, num_toss);
     printf("-> pi: %lf\n", 4*total_in_circle / (double)num_toss);
     printf("------------------------------------------------------\n");
     printf("-> Elapsed Time: %lf sec\n", (sec*1000+(usec/1000.0))/1000);
